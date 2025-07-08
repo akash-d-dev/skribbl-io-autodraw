@@ -25,10 +25,26 @@ const drawImage = function (image) {
     log("Clearing canvas...");
     toolbar.clear();
 
+    const startTime = performance.now();
     log(`Drawing ${image.width} x ${image.height} image...`);
     commands = commands.concat(artist.draw(image));
+    const commandGenTime = performance.now() - startTime;
+    log(`Command generation took ${commandGenTime.toFixed(2)}ms`);
+    
     domHelper.hideCanvasOverlay();
+    
+    const drawStartTime = performance.now();
     processWithoutBlocking(commands, /* shouldStop: */ () => !toolbar.isEnabled());
+    
+    // Track drawing completion
+    const originalLength = commands.length;
+    const checkProgress = setInterval(() => {
+        if (commands.length === 0) {
+            const totalTime = performance.now() - drawStartTime;
+            log(`Drawing completed in ${totalTime.toFixed(2)}ms (${originalLength} commands)`);
+            clearInterval(checkProgress);
+        }
+    }, 100);
 };
 
 const stopDrawing = function () {
